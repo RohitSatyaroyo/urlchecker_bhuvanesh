@@ -1,0 +1,5 @@
+flask==2.0.1
+requests==2.26.0
+validators==0.18.2
+urllib3==1.26.7
+pyOpenSSL==21.0.0
