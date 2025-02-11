@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Security Checker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">URL Security Checker</h1>
+        
+        <div class="mb-4">
+            <input type="text" id="urlInput" 
+                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Enter URL (e.g., https://example.com)">
+        </div>
+        
+        <button onclick="checkURL()" 
+                class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
+            Check URL
+        </button>
+
+        <div id="results" class="mt-6 hidden">
+            <h2 class="text-xl font-semibold mb-4">Results</h2>
+            <div id="resultContent" class="space-y-2"></div>
+        </div>
+
+        <div id="error" class="mt-6 hidden">
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4"></div>
+        </div>
+    </div>
+
+    <script>
+        async function checkURL() {
+            const url = document.getElementById('urlInput').value;
+            const resultsDiv = document.getElementById('results');
+            const resultContent = document.getElementById('resultContent');
+            const errorDiv = document.getElementById('error');
+
+            try {
+                const response = await fetch('/check_url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+
+                if (data.valid) {
+                    errorDiv.classList.add('hidden');
+                    resultsDiv.classList.remove('hidden');
+                    
+                    resultContent.innerHTML = `
+                        <p class="flex items-center">
+                            <span class="font-semibold">URL:</span>
+                            <span class="ml-2">${data.url}</span>
+                        </p>
+                        <p class="flex items-center">
+                            <span class="font-semibold">HTTPS:</span>
+                            <span class="ml-2">${data.is_https ? '✅' : '❌'}</span>
+                        </p>
+                        <p class="flex items-center">
+                            <span class="font-semibold">Status Code:</span>
+                            <span class="ml-2">${data.status_code}</span>
+                        </p>
+                        <p class="flex items-center">
+                            <span class="font-semibold">SSL Certificate:</span>
+                            <span class="ml-2">${data.ssl_valid ? '✅ Valid' : '❌ Invalid'}</span>
+                        </p>
+                    `;
+
+                    if (data.ssl_info && data.ssl_info.valid) {
+                        resultContent.innerHTML += `
+                            <p class="flex items-center">
+                                <span class="font-semibold">SSL Expiry:</span>
+                                <span class="ml-2">${data.ssl_info.expiry_date}</span>
+                            </p>
+                            <p class="flex items-center">
+                                <span class="font-semibold">SSL Issuer:</span>
+                                <span class="ml-2">${data.ssl_info.issuer}</span>
+                            </p>
+                        `;
+                    }
+                } else {
+                    resultsDiv.classList.add('hidden');
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.querySelector('div').textContent = data.error;
+                }
+            } catch (error) {
+                resultsDiv.classList.add('hidden');
+                errorDiv.classList.remove('hidden');
+                errorDiv.querySelector('div').textContent = 'Error checking URL: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
